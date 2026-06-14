@@ -69,3 +69,17 @@
     selector: ".release .date"
     format: '%b %d, %Y'
   disabled: true
+
+# Added via feed request
+- id: hermes-releases
+  title: Hermes Releases
+  url: https://github.com/NousResearch/hermes-agent/releases
+  description: Release notes for NousResearch/hermes-agent
+  item: '[data-view-component="true"][class*="Release"]'
+  entry_title: '[data-view-component="true"][class*="ReleaseTitle"]'
+  date:
+    selector: relative-time
+  link:
+    selector: a[href*="releases/tag"]
+    attr: href
+  max_items: 30
