@@ -72,6 +72,10 @@ which:
 2. if it passes, **derives the CSS selectors** and **opens a pull request**
    adding the feed, linked back to your issue.
 
+If the page already publishes a **native feed** (e.g. a GitHub
+releases/tags/commits or user page, which expose `.atom`), the bot skips
+scraping and just points you at that feed URL — subscribe to it directly.
+
 A maintainer reviews and merges the PR — **nothing is scraped or published until
 then**. Whether that PR is merged or closed, your issue is closed automatically.
 If the request is declined up front, the bot comments with the reason and closes

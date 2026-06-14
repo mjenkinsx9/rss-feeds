@@ -85,3 +85,12 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh issue edit "${{ github.event.issue.number }}" --add-label "needs-info"
+
+      - name: Point at native feed (already exists)
+        if: steps.review.outputs.decision == 'native_feed'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh issue edit "${{ github.event.issue.number }}" --add-label "native-feed"
+          gh issue close "${{ github.event.issue.number }}" --reason completed

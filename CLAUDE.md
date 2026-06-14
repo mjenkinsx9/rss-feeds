@@ -74,6 +74,12 @@ label). `.github/workflows/feed-request.yml` then runs
    the `anthropic` SDK with **structured outputs**) to do two things at once:
    moderate against `CONTENT_POLICY.md` and derive the CSS selectors. Haiku
    doesn't support adaptive thinking, so no `thinking` param is sent.
+Before scraping, the bot also short-circuits when the URL already publishes a
+native feed (`native_feed_candidate` detects GitHub releases/tags/commits and
+user/org `.atom` URLs, verified by `looks_like_feed`): decision `native_feed`
+→ the workflow comments with the feed URL, labels `native-feed`, and closes the
+issue. No PR, no scraping.
+
 3. On **approve**: appends an entry to `feeds.yaml` (by appending a
    `yaml.safe_dump` block — it does *not* re-dump the whole file, so the header
    comments and disabled examples are preserved), verifies by calling

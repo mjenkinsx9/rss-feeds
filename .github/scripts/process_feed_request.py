@@ -26,6 +26,8 @@ import os
 import re
 import sys
 
+from urllib.parse import urlparse
+
 import yaml
 from bs4 import BeautifulSoup
 
@@ -221,6 +223,42 @@ def slugify(text):
     return s or "feed"
 
 
+def native_feed_candidate(url):
+    """If the URL is a code-host page that already publishes a native Atom feed,
+    return that feed URL (else None). GitHub releases/tags/commits and user/org
+    pages all expose `.atom`; scraping those is pointless when a real feed exists.
+    """
+    p = urlparse(url)
+    host = p.netloc.lower()
+    parts = [s for s in p.path.split("/") if s]
+    if host in ("github.com", "www.github.com"):
+        if len(parts) == 1:                                  # user / org activity
+            return "https://github.com/%s.atom" % parts[0]
+        if len(parts) >= 3:
+            owner, repo, section = parts[0], parts[1], parts[2]
+            if section in ("releases", "tags"):
+                return "https://github.com/%s/%s/%s.atom" % (owner, repo, section)
+            if section == "commits":
+                branch = parts[3] if len(parts) >= 4 else None
+                return ("https://github.com/%s/%s/commits/%s.atom" % (owner, repo, branch)
+                        if branch else "https://github.com/%s/%s/commits.atom" % (owner, repo))
+    return None
+
+
+def looks_like_feed(url):
+    """Verify a candidate feed URL actually serves a feed (200 + XML/Atom)."""
+    try:
+        r = generate.safe_get(url, headers=UA, timeout=20)
+    except Exception:
+        return False
+    if r.status_code != 200:
+        return False
+    ctype = r.headers.get("Content-Type", "").lower()
+    head = r.text[:400].lstrip()
+    return ("xml" in ctype or "atom" in ctype
+            or head.startswith("<?xml") or "<feed" in head or "<rss" in head)
+
+
 def existing_ids():
     try:
         with open(FEEDS, encoding="utf-8") as f:
@@ -322,6 +360,19 @@ def main():
         finish("reject",
                f"I can't fetch `{url}`: {e}. Feeds can only be built from public "
                f"web pages (http/https on a public host). This request was not processed.")
+
+    # Short-circuit: if the page already publishes a native feed (e.g. GitHub
+    # .atom), point the requester at it instead of scraping — our engine can't
+    # improve on a real feed, and big code-host pages don't scrape well anyway.
+    native = native_feed_candidate(url)
+    if native and looks_like_feed(native):
+        finish("native_feed",
+               f"Good news — this page already publishes a native feed, so you don't need "
+               f"this project to scrape it. Subscribe to it directly in your RSS reader:\n\n"
+               f"```text\n{native}\n```\n\nClosing this request since the feed already exists. "
+               f"(If you specifically wanted a reformatted/scraped version, comment here and "
+               f"a maintainer can take a look.)")
+
     try:
         resp = generate.safe_get(url, headers=UA, timeout=40)
         resp.raise_for_status()
