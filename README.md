@@ -70,7 +70,8 @@ which:
    adding the feed, linked back to your issue.
 
 A maintainer reviews and merges the PR — **nothing is scraped or published until
-then**. If the request is declined, the bot comments with the reason and closes
+then**. Whether that PR is merged or closed, your issue is closed automatically.
+If the request is declined up front, the bot comments with the reason and closes
 the issue. Prefer to do it yourself? Add the feed directly:
 
 ## Add a New Feed

@@ -85,6 +85,13 @@ The script never calls `gh`/`git` itself — it sets step outputs (`decision`,
 the workflow does all GitHub mutations. **Every approval is a PR a human merges**
 — Claude's selectors are a proposal, never auto-published.
 
+A second workflow, `.github/workflows/feed-request-close.yml`, fires on
+`pull_request: [closed]` and closes the linked issue when its PR is merged or
+closed. On merge GitHub already auto-closes it via the `Closes #N` in the PR
+body; this workflow covers the close-without-merge case (and is idempotent on
+merge). It recovers the issue number from the numeric suffix of the
+`feed-request/<slug>-<n>` branch name.
+
 Key facts for working on this:
 - The issue body and scraped HTML are **untrusted**. The system prompt in
   `process_feed_request.py` treats them as data-only and forbids following

@@ -1,0 +1,50 @@
+name: Feed request follow-up
+
+# When a feed-request PR is closed, close the linked issue too.
+# - merged:  GitHub already auto-closes it via "Closes #N" in the PR body; this
+#            also leaves a friendly comment and closes it if it's somehow open.
+# - closed without merging: GitHub does NOT close the issue, so we do it here.
+# The linked issue number is the numeric suffix of the bot branch name
+# (feed-request/<slug>-<issue-number>).
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  close-issue:
+    if: startsWith(github.event.pull_request.head.ref, 'feed-request/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Close the linked issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          MERGED: ${{ github.event.pull_request.merged }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          NUM="${HEAD_REF##*-}"
+          if ! [[ "$NUM" =~ ^[0-9]+$ ]]; then
+            echo "Could not parse an issue number from branch '$HEAD_REF' — nothing to do."
+            exit 0
+          fi
+          STATE=$(gh issue view "$NUM" --repo "$REPO" --json state -q .state 2>/dev/null || echo "MISSING")
+          if [ "$STATE" = "MISSING" ]; then
+            echo "Issue #$NUM not found — nothing to do."
+            exit 0
+          fi
+          if [ "$MERGED" = "true" ]; then
+            gh issue comment "$NUM" --repo "$REPO" \
+              --body "✅ PR #$PR was merged — the feed will publish on the next scheduled build (within ~6h). Thanks for the request!"
+            [ "$STATE" = "OPEN" ] && gh issue close "$NUM" --repo "$REPO" --reason completed || true
+          else
+            gh issue comment "$NUM" --repo "$REPO" \
+              --body "PR #$PR was closed without merging, so this feed wasn't added. Closing this request — comment here if you think it should be revisited."
+            [ "$STATE" = "OPEN" ] && gh issue close "$NUM" --repo "$REPO" --reason "not planned" || true
+          fi
