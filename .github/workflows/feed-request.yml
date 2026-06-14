@@ -1,0 +1,87 @@
+name: Feed request
+
+# Reviews "feed request" issues with Claude: moderate against the content policy,
+# derive selectors, and either open a PR (approve), comment + close (reject), or
+# ask for more info. Nothing is published until a maintainer merges the PR.
+
+on:
+  issues:
+    types: [opened, edited, labeled]
+
+permissions:
+  contents: write          # push the PR branch
+  issues: write            # comment / label / close
+  pull-requests: write     # open the PR
+
+concurrency:
+  group: feed-request-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    # Only handle feed-request issues that haven't already been decided, and
+    # ignore issues opened by the bot itself.
+    if: >
+      contains(github.event.issue.labels.*.name, 'feed-request') &&
+      !contains(github.event.issue.labels.*.name, 'feed-approved') &&
+      !contains(github.event.issue.labels.*.name, 'declined') &&
+      github.event.issue.user.login != 'github-actions[bot]'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r .github/scripts/requirements.txt
+
+      - name: Review request with Claude
+        id: review
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+        run: python .github/scripts/process_feed_request.py
+
+      - name: Comment on the issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue comment "${{ github.event.issue.number }}" --body-file .bot_out/issue_comment.md
+
+      - name: Open pull request (approved)
+        if: steps.review.outputs.decision == 'approve'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          BRANCH="${{ steps.review.outputs.branch }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add feeds.yaml
+          git commit -m "Add ${{ steps.review.outputs.slug }} feed (requested in #${{ github.event.issue.number }})"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "Add ${{ steps.review.outputs.slug }} feed (request #${{ github.event.issue.number }})" \
+            --body-file .bot_out/pr_body.md
+          gh issue edit "${{ github.event.issue.number }}" --add-label "feed-approved"
+
+      - name: Decline the issue (rejected)
+        if: steps.review.outputs.decision == 'reject'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh issue edit "${{ github.event.issue.number }}" --add-label "declined"
+          gh issue close "${{ github.event.issue.number }}" --reason "not planned"
+
+      - name: Request more info (needs info)
+        if: steps.review.outputs.decision == 'needs_info'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh issue edit "${{ github.event.issue.number }}" --add-label "needs-info"

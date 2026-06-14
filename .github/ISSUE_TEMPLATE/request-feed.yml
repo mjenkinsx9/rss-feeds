@@ -1,0 +1,66 @@
+name: Request a new RSS feed
+description: Ask the bot to build an RSS feed for a web page that doesn't have one.
+title: "[feed request] "
+labels: ["feed-request"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Open this to request an RSS feed for a page that doesn't publish one.
+        A bot reviews each request (it moderates against our
+        [content policy](../blob/main/CONTENT_POLICY.md) and tries to work out the
+        CSS selectors), then opens a pull request for a maintainer to review and
+        merge. Nothing is scraped or published until that PR is merged.
+
+  - type: input
+    id: url
+    attributes:
+      label: Source page URL
+      description: The page whose updates you want as a feed (a blog index, changelog, news/releases page, …).
+      placeholder: https://example.com/blog
+    validations:
+      required: true
+
+  - type: input
+    id: title
+    attributes:
+      label: Proposed feed title
+      description: A human-readable name for the feed.
+      placeholder: Example Blog
+    validations:
+      required: true
+
+  - type: input
+    id: slug
+    attributes:
+      label: Feed id (slug)
+      description: "Optional. Lowercase letters, numbers and hyphens only — becomes the file name, e.g. `example-blog.xml`. Leave blank and the bot will pick one."
+      placeholder: example-blog
+    validations:
+      required: false
+
+  - type: textarea
+    id: what
+    attributes:
+      label: What should the feed capture?
+      description: Optional. Which entries on the page are the "items" (e.g. each blog post, each release). Helps the bot pick the right selectors.
+      placeholder: Each blog post in the list — title, date, and summary.
+    validations:
+      required: false
+
+  - type: textarea
+    id: hints
+    attributes:
+      label: Selector hints (optional)
+      description: If you've inspected the page, paste any CSS selectors you found for the repeating item, its title, date, and link.
+      render: text
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: policy
+    attributes:
+      label: Content policy acknowledgement
+      options:
+        - label: This site is not primarily pornographic/adult, violent/gory, gambling, or hateful/extremist (or otherwise illegal, malware, fraud, or harassment) content, and it is a publicly readable page.
+          required: true

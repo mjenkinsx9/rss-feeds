@@ -36,6 +36,7 @@ for plain selectors.
 
 - [Quick Start](#quick-start)
   - [Subscribe to a Feed](#subscribe-to-a-feed)
+  - [Request a Feed (just open an issue)](#request-a-feed-just-open-an-issue)
 - [Add a New Feed](#add-a-new-feed)
   - [Field reference](#field-reference)
 - [Sites Selectors Can't Handle](#sites-selectors-cant-handle)
@@ -56,6 +57,21 @@ for plain selectors.
   ```
 
 Each feed lives at `https://mjenkinsx9.github.io/rss-feeds/<id>.xml`.
+
+### Request a Feed (just open an issue)
+
+Don't want to touch YAML? **[Open a feed request issue](../../issues/new?template=request-feed.yml)**
+with the page's URL. A GitHub Action sends the request and the page to Claude,
+which:
+
+1. **Moderates** it against the [content policy](./CONTENT_POLICY.md) (no adult,
+   violence/gore, gambling, or hateful/extremist/illegal content), and
+2. if it passes, **derives the CSS selectors** and **opens a pull request**
+   adding the feed, linked back to your issue.
+
+A maintainer reviews and merges the PR — **nothing is scraped or published until
+then**. If the request is declined, the bot comments with the reason and closes
+the issue. Prefer to do it yourself? Add the feed directly:
 
 ## Add a New Feed
 

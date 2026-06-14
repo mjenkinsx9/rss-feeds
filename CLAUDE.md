@@ -60,6 +60,42 @@ functions feeding `build_feed()`:
    `generate` as a module to reuse `clean_body`, `abs_url`, `parse_date`. See
    `recipes/example_recipe.py`.
 
+### Feed-request bot (issue → moderated PR)
+
+Users can request a feed by opening an issue
+(`.github/ISSUE_TEMPLATE/request-feed.yml`, which auto-applies the `feed-request`
+label). `.github/workflows/feed-request.yml` then runs
+`.github/scripts/process_feed_request.py`, which:
+
+1. Parses the issue-form body and validates the basics (URL, title, policy
+   checkbox).
+2. Fetches the page and asks **Claude** (`claude-opus-4-8`, via the `anthropic`
+   SDK with **structured outputs**) to do two things at once: moderate against
+   `CONTENT_POLICY.md` and derive the CSS selectors.
+3. On **approve**: appends an entry to `feeds.yaml` (by appending a
+   `yaml.safe_dump` block — it does *not* re-dump the whole file, so the header
+   comments and disabled examples are preserved), verifies by calling
+   `generate.build_feed(cfg)` once, and the workflow opens a PR. On **reject**:
+   comments + closes. On **needs_info**: comments + labels.
+
+The script never calls `gh`/`git` itself — it sets step outputs (`decision`,
+`branch`, `slug`, …) and writes `.bot_out/issue_comment.md` + `.bot_out/pr_body.md`;
+the workflow does all GitHub mutations. **Every approval is a PR a human merges**
+— Claude's selectors are a proposal, never auto-published.
+
+Key facts for working on this:
+- The issue body and scraped HTML are **untrusted**. The system prompt in
+  `process_feed_request.py` treats them as data-only and forbids following
+  instructions inside them; the JSON-schema output bounds the result. Preserve
+  this if you edit the prompt.
+- Requires the **`ANTHROPIC_API_KEY`** repo secret (small per-issue API cost).
+- Needs **"Allow GitHub Actions to create and approve pull requests"** enabled
+  (repo Settings → Actions → General, or the
+  `actions/permissions/workflow` API) so the default `GITHUB_TOKEN` can open the
+  PR.
+- The script's deps are in `.github/scripts/requirements.txt` (adds `anthropic`);
+  the engine's `requirements.txt` is kept dependency-light and unchanged.
+
 ### Deployment
 
 `.github/workflows/build.yml` runs `python generate.py` every 6 hours (and on
