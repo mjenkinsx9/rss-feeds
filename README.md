@@ -16,9 +16,12 @@
 Feeds are rebuilt every 6 hours and served from GitHub Pages. Browse them all on the
 **[landing page](https://mjenkinsx9.github.io/rss-feeds/)**.
 
-| Source                                                                          | Feed                                                              |
-| ------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| [OpenAI Codex Changelog](https://developers.openai.com/codex/changelog)         | [codex.xml](https://mjenkinsx9.github.io/rss-feeds/codex.xml)     |
+<!-- FEEDS:START -->
+| Source | Feed |
+| --- | --- |
+| [OpenAI Codex Changelog](https://developers.openai.com/codex/changelog) | [codex.xml](https://mjenkinsx9.github.io/rss-feeds/codex.xml) |
+| [Hermes Releases](https://github.com/NousResearch/hermes-agent/releases) | [hermes-releases.xml](https://mjenkinsx9.github.io/rss-feeds/hermes-releases.xml) |
+<!-- FEEDS:END -->
 
 ### What is this? <!-- omit in toc -->
 
