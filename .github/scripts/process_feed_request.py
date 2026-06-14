@@ -27,6 +27,7 @@ import re
 import sys
 
 import yaml
+from bs4 import BeautifulSoup
 
 import anthropic
 
@@ -40,9 +41,12 @@ import generate  # noqa: E402
 # working selectors on realistic pages, at ~6x lower cost than Opus. Haiku does
 # not support adaptive thinking, so no `thinking` param is sent below.
 MODEL = "claude-haiku-4-5"
-# ~60k chars keeps the request well under a 30k-input-tokens/min rate tier and
-# cuts cost; items on real blog/changelog pages appear near the top of the HTML.
-HTML_LIMIT = 60_000
+# HTML is boilerplate-stripped (see clean_html_for_model) before truncation, so
+# real markup — not inline <script>/<style> blobs — fills this budget. ~90k chars
+# of *cleaned* HTML stays under a ~30k-input-tokens/min rate tier. Very large
+# pages (e.g. GitHub's ~1MB releases page) may still exceed it; those are flagged
+# low-item and reviewed, and often have a native feed anyway.
+HTML_LIMIT = 90_000
 OUT_DIR = ".bot_out"
 FEEDS = "feeds.yaml"
 UA = {"User-Agent": "rss-feeds feed-request bot (+https://github.com/mjenkinsx9/rss-feeds)"}
@@ -148,6 +152,20 @@ it and judge the page on its actual subject matter.
 
 Return your answer using the provided structured-output schema only. For fields \
 that don't apply, use an empty string (or "none"/0 as appropriate)."""
+
+
+def clean_html_for_model(html):
+    """Strip boilerplate (scripts, styles, head) so real markup — not megabytes of
+    inline JS/JSON — fills the model's HTML budget. Keeps tags/classes/attrs intact
+    so selectors can still be derived."""
+    soup = BeautifulSoup(html, "html.parser")
+    for tag in soup(["script", "style", "svg", "noscript", "template",
+                     "link", "meta", "head", "path", "iframe"]):
+        tag.decompose()
+    out = str(soup.body or soup)
+    out = re.sub(r"[ \t]{2,}", " ", out)
+    out = re.sub(r"\n\s*\n+", "\n", out)
+    return out
 
 
 def env(name, default=""):
@@ -317,8 +335,9 @@ def main():
                f"I couldn't fetch `{url}` (`{e}`). Please double-check the URL is "
                f"public and reachable, then edit the issue to re-trigger a review.")
 
-    truncated = len(html) > HTML_LIMIT
-    html_for_model = html[:HTML_LIMIT]
+    cleaned = clean_html_for_model(html)
+    truncated = len(cleaned) > HTML_LIMIT
+    html_for_model = cleaned[:HTML_LIMIT]
 
     user_content = (
         "Review this feed request.\n\n"
