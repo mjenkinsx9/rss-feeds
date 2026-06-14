@@ -1,0 +1,71 @@
+# ============================================================================
+# feeds.yaml — describe each site you want an RSS feed for.
+# One engine (generate.py) reads this and builds docs/<id>.xml for each entry.
+#
+# Required:  id, title, url, item
+# Optional:  description, entry_title, date, body, link, max_items, disabled, recipe
+#
+#   id            short slug -> the feed file is docs/<id>.xml
+#   url           page to scrape
+#   item          CSS selector that matches ONE changelog/post entry
+#   entry_title   CSS selector (within an item) for the headline; omit to use item text
+#   body          CSS selector (within an item) for the description HTML
+#   date:
+#     selector    CSS selector for the date element (within an item)
+#     attr        read this attribute instead of the text (e.g. datetime)
+#     regex       OR: a regex searched in the item's text (e.g. '20\d{2}-\d{2}-\d{2}')
+#     format      strptime format if the date isn't ISO (e.g. '%b %d, %Y')
+#   link:
+#     selector    CSS selector for the link (within an item)
+#     attr        attribute to read (default: href)
+#     base_anchor true -> link = page url + '#' + slugified title
+#   max_items     cap the number of items
+#   disabled      true -> skip this feed
+#   recipe        name of a module in recipes/ for sites selectors can't handle
+# ============================================================================
+
+- id: codex
+  title: OpenAI Codex Changelog
+  description: Unofficial RSS feed of the OpenAI Codex changelog.
+  url: https://developers.openai.com/codex/changelog
+  item: "li.scroll-mt-28"
+  entry_title: "h3"
+  body: "article"
+  date:
+    regex: '20\d{2}-\d{2}-\d{2}'
+    format: '%Y-%m-%d'
+  link:
+    base_anchor: true
+  max_items: 100
+
+# ---------------------------------------------------------------------------
+# EXAMPLES — copy one of these, set `disabled: false`, and adjust the selectors.
+# Use your browser's "Inspect element" to find the right CSS selectors.
+# ---------------------------------------------------------------------------
+
+# A typical blog: each post is an <article>, with an <h2><a> title and a <time>.
+- id: example-blog
+  title: Example Blog
+  url: https://example.com/blog
+  item: "article.post"
+  entry_title: "h2 a"
+  body: ".entry-summary"
+  date:
+    selector: "time"
+    attr: "datetime"        # ISO date in the datetime="..." attribute
+  link:
+    selector: "h2 a"
+    attr: "href"
+  disabled: true
+
+# A changelog where dates are plain text like "Jan 15, 2026":
+- id: example-changelog
+  title: Example Changelog
+  url: https://example.com/changelog
+  item: ".release"
+  entry_title: ".release h3"
+  body: ".release .notes"
+  date:
+    selector: ".release .date"
+    format: '%b %d, %Y'
+  disabled: true
