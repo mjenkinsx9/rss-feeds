@@ -20,7 +20,6 @@ Feeds are rebuilt every 6 hours and served from GitHub Pages. Browse them all on
 | Source | Feed |
 | --- | --- |
 | [OpenAI Codex Changelog](https://developers.openai.com/codex/changelog) | [codex.xml](https://mjenkinsx9.github.io/rss-feeds/codex.xml) |
-| [Hermes Releases](https://github.com/NousResearch/hermes-agent/releases) | [hermes-releases.xml](https://mjenkinsx9.github.io/rss-feeds/hermes-releases.xml) |
 <!-- FEEDS:END -->
 
 ### What is this? <!-- omit in toc -->
@@ -72,9 +71,10 @@ which:
 2. if it passes, **derives the CSS selectors** and **opens a pull request**
    adding the feed, linked back to your issue.
 
-If the page already publishes a **native feed** (e.g. a GitHub
-releases/tags/commits or user page, which expose `.atom`), the bot skips
-scraping and just points you at that feed URL — subscribe to it directly.
+If the page **already has a feed**, the bot skips scraping and just points you at
+it — whether that's a GitHub `.atom` (releases/tags/commits/user pages), a feed
+the page advertises in its `<head>` (most blogs and CMSes do this), or a URL
+that's already a feed. No point reformatting a feed that already exists.
 
 A maintainer reviews and merges the PR — **nothing is scraped or published until
 then**. Whether that PR is merged or closed, your issue is closed automatically.

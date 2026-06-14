@@ -26,7 +26,7 @@ import os
 import re
 import sys
 
-from urllib.parse import urlparse
+from urllib.parse import urljoin, urlparse
 
 import yaml
 from bs4 import BeautifulSoup
@@ -245,18 +245,38 @@ def native_feed_candidate(url):
     return None
 
 
+def _is_feed_payload(ctype, text):
+    ctype = (ctype or "").lower()
+    head = (text or "")[:400].lstrip()
+    return ("rss+xml" in ctype or "atom+xml" in ctype
+            or head.startswith("<?xml") or "<feed" in head or "<rss" in head)
+
+
 def looks_like_feed(url):
     """Verify a candidate feed URL actually serves a feed (200 + XML/Atom)."""
     try:
         r = generate.safe_get(url, headers=UA, timeout=20)
     except Exception:
         return False
-    if r.status_code != 200:
-        return False
-    ctype = r.headers.get("Content-Type", "").lower()
-    head = r.text[:400].lstrip()
-    return ("xml" in ctype or "atom" in ctype
-            or head.startswith("<?xml") or "<feed" in head or "<rss" in head)
+    return r.status_code == 200 and _is_feed_payload(r.headers.get("Content-Type"), r.text)
+
+
+def discover_feed_in_html(html, page_url):
+    """Find a feed advertised in the page <head> via
+    <link rel="alternate" type="application/rss+xml|atom+xml">. Returns an
+    absolute URL or None. De-prioritises obvious comment feeds."""
+    soup = BeautifulSoup(html, "html.parser")
+    candidates = []
+    for link in soup.find_all("link"):
+        rels = [r.lower() for r in (link.get("rel") or [])]
+        typ = (link.get("type") or "").lower()
+        href = link.get("href")
+        if href and "alternate" in rels and typ in ("application/rss+xml", "application/atom+xml"):
+            title = (link.get("title") or "").lower()
+            score = 1 if ("comment" in title or "comments" in href.lower()) else 0
+            candidates.append((score, urljoin(page_url, href)))
+    candidates.sort(key=lambda c: c[0])
+    return candidates[0][1] if candidates else None
 
 
 def existing_ids():
@@ -385,6 +405,22 @@ def main():
         finish("needs_info",
                f"I couldn't fetch `{url}` (`{e}`). Please double-check the URL is "
                f"public and reachable, then edit the issue to re-trigger a review.")
+
+    # The URL the requester pasted is already a feed.
+    if _is_feed_payload(resp.headers.get("Content-Type"), html):
+        finish("native_feed",
+               f"That URL is already an RSS/Atom feed — you can subscribe to it directly in "
+               f"your reader, no need to add it here:\n\n```text\n{url}\n```\n\nClosing this request.")
+
+    # The page advertises a feed via <link rel="alternate"> (feed autodiscovery) —
+    # most blogs/CMSes do. Prefer that real feed over scraping.
+    discovered = discover_feed_in_html(html, url)
+    if discovered and looks_like_feed(discovered):
+        finish("native_feed",
+               f"Good news — this page already advertises its own feed, so you don't need this "
+               f"project to scrape it. Subscribe to it directly:\n\n```text\n{discovered}\n```\n\n"
+               f"Closing this request since the feed already exists. (If you specifically wanted a "
+               f"reformatted/scraped version, comment here and a maintainer can take a look.)")
 
     cleaned = clean_html_for_model(html)
     truncated = len(cleaned) > HTML_LIMIT
