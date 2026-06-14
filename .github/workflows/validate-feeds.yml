@@ -1,0 +1,37 @@
+name: Validate feeds
+
+# PR quality gate for feeds.yaml: structure + duplicate-id/url checks, and a
+# live smoke-build of any newly added feed (0 items fails the check). Runs at
+# merge time against the current main, catching duplicates or broken selectors
+# that the feed-request bot couldn't see when the issue was first opened.
+
+on:
+  pull_request:
+    paths:
+      - feeds.yaml
+      - generate.py
+      - recipes/**
+      - .github/scripts/validate_feeds.py
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Fetch base feeds.yaml (for added-feed detection)
+        run: |
+          git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+          git show "FETCH_HEAD:feeds.yaml" > /tmp/base_feeds.yaml 2>/dev/null || echo "[]" > /tmp/base_feeds.yaml
+
+      - name: Validate feeds.yaml + smoke-build added feeds
+        run: python .github/scripts/validate_feeds.py /tmp/base_feeds.yaml

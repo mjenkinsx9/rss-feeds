@@ -105,6 +105,19 @@ Key facts for working on this:
 - The script's deps are in `.github/scripts/requirements.txt` (adds `anthropic`);
   the engine's `requirements.txt` is kept dependency-light and unchanged.
 
+### PR checks
+
+`.github/workflows/validate-feeds.yml` runs
+`.github/scripts/validate_feeds.py` on PRs that touch `feeds.yaml` (or the engine).
+It always does structural + duplicate validation (unique slug-form `id`,
+required fields, valid `date`/`link`/`max_items` shapes, recipe module exists,
+duplicate-url warning) and **fails the PR on any error**. When the base
+`feeds.yaml` is passed (the workflow supplies it via `git show FETCH_HEAD`), it
+also **smoke-builds only the newly added feeds** against the live page — 0 items
+is an error, 1–2 a warning. This is the real gate on `main`: it re-checks for
+duplicate ids at *merge* time (the bot only checked at issue-open time) and
+verifies selectors still work.
+
 ### Deployment
 
 `.github/workflows/build.yml` runs `python generate.py` every 6 hours (and on
