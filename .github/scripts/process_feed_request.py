@@ -35,8 +35,14 @@ import anthropic
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 import generate  # noqa: E402
 
-MODEL = "claude-opus-4-8"
-HTML_LIMIT = 120_000  # chars of raw HTML sent to Claude (cost/context guard)
+# claude-haiku-4-5 was the cheapest model that passed the benchmark
+# (.github/scripts/benchmark_models.py): correct moderation on every case and
+# working selectors on realistic pages, at ~6x lower cost than Opus. Haiku does
+# not support adaptive thinking, so no `thinking` param is sent below.
+MODEL = "claude-haiku-4-5"
+# ~60k chars keeps the request well under a 30k-input-tokens/min rate tier and
+# cuts cost; items on real blog/changelog pages appear near the top of the HTML.
+HTML_LIMIT = 60_000
 OUT_DIR = ".bot_out"
 FEEDS = "feeds.yaml"
 UA = {"User-Agent": "rss-feeds feed-request bot (+https://github.com/mjenkinsx9/rss-feeds)"}
@@ -335,7 +341,6 @@ def main():
     message = client.messages.create(
         model=MODEL,
         max_tokens=8000,
-        thinking={"type": "adaptive"},
         system=SYSTEM_PROMPT,
         output_config={"format": {"type": "json_schema", "schema": RESULT_SCHEMA}},
         messages=[{"role": "user", "content": user_content}],

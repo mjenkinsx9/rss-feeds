@@ -69,9 +69,11 @@ label). `.github/workflows/feed-request.yml` then runs
 
 1. Parses the issue-form body and validates the basics (URL, title, policy
    checkbox).
-2. Fetches the page and asks **Claude** (`claude-opus-4-8`, via the `anthropic`
-   SDK with **structured outputs**) to do two things at once: moderate against
-   `CONTENT_POLICY.md` and derive the CSS selectors.
+2. Fetches the page and asks **Claude** (`claude-haiku-4-5` — chosen via
+   `.github/scripts/benchmark_models.py` as the cheapest model that passed; via
+   the `anthropic` SDK with **structured outputs**) to do two things at once:
+   moderate against `CONTENT_POLICY.md` and derive the CSS selectors. Haiku
+   doesn't support adaptive thinking, so no `thinking` param is sent.
 3. On **approve**: appends an entry to `feeds.yaml` (by appending a
    `yaml.safe_dump` block — it does *not* re-dump the whole file, so the header
    comments and disabled examples are preserved), verifies by calling
