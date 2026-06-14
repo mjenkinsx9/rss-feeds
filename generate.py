@@ -8,8 +8,9 @@ and writes docs/index.html listing every feed.
 Each feed is described with CSS selectors (no code needed). For sites that
 are too quirky for selectors, point `recipe:` at a module in recipes/.
 """
-import os, re, html, sys, importlib
+import os, re, html, sys, importlib, socket, ipaddress
 from datetime import datetime, timezone
+from urllib.parse import urlparse, urljoin
 import requests
 import yaml
 from bs4 import BeautifulSoup
@@ -26,6 +27,74 @@ SITE_BASE_URL = "https://mjenkinsx9.github.io/rss-feeds"
 UA = {"User-Agent": "rss-feeds (+https://github.com/mjenkinsx9/rss-feeds)"}
 KEEP = {"a","ul","ol","li","p","code","pre","strong","em","b","i","br","h4","blockquote"}
 DROP = {"script","style","svg","button","nav","form","input","img","path","iframe"}
+
+# --- SSRF guard --------------------------------------------------------------
+# Feed URLs can come from untrusted sources (e.g. the feed-request bot fetches a
+# URL submitted in a public issue, from inside CI). Block requests that resolve
+# to non-public addresses (loopback, private, link-local, cloud metadata, etc.),
+# restrict to http/https on ports 80/443, and follow redirects manually so each
+# hop is re-validated. Residual risk: DNS rebinding between resolve and connect
+# (a known limitation of resolve-then-request without IP pinning) — acceptable
+# here because the bot's output is a human-reviewed PR, not an auto-publish.
+ALLOWED_SCHEMES = {"http", "https"}
+ALLOWED_PORTS = {80, 443}
+_BLOCKED_NETS = [ipaddress.ip_network(n) for n in (
+    "0.0.0.0/8", "10.0.0.0/8", "100.64.0.0/10", "127.0.0.0/8", "169.254.0.0/16",
+    "172.16.0.0/12", "192.0.0.0/24", "192.168.0.0/16", "198.18.0.0/15",
+    "::1/128", "::/128", "fc00::/7", "fe80::/10",
+)]
+
+
+class UnsafeURLError(Exception):
+    """Raised when a URL is disallowed by the SSRF guard."""
+
+
+def _addr_blocked(ip_str):
+    ip = ipaddress.ip_address(ip_str)
+    if getattr(ip, "ipv4_mapped", None):
+        ip = ip.ipv4_mapped
+    if (ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast
+            or ip.is_reserved or ip.is_unspecified):
+        return True
+    return any(ip in net for net in _BLOCKED_NETS)
+
+
+def assert_public_url(url):
+    """Validate scheme/port/credentials and that the host resolves to a public IP."""
+    p = urlparse(url)
+    if p.scheme not in ALLOWED_SCHEMES:
+        raise UnsafeURLError("only http and https URLs are allowed")
+    if p.username or p.password:
+        raise UnsafeURLError("URLs with embedded credentials are not allowed")
+    host = (p.hostname or "").rstrip(".").lower()
+    if not host:
+        raise UnsafeURLError("missing host")
+    port = p.port or (443 if p.scheme == "https" else 80)
+    if port not in ALLOWED_PORTS:
+        raise UnsafeURLError("only ports 80 and 443 are allowed")
+    try:
+        infos = socket.getaddrinfo(host, port, proto=socket.IPPROTO_TCP)
+    except socket.gaierror as e:
+        raise UnsafeURLError("could not resolve host: %s" % e)
+    addrs = {info[4][0] for info in infos}
+    if not addrs:
+        raise UnsafeURLError("host did not resolve")
+    for a in addrs:
+        if _addr_blocked(a):
+            raise UnsafeURLError("host resolves to a non-public address (%s)" % a)
+    return host
+
+
+def safe_get(url, headers=None, timeout=40, max_redirects=5):
+    """requests.get with an SSRF guard and manual, re-validated redirects."""
+    for _ in range(max_redirects + 1):
+        assert_public_url(url)
+        r = requests.get(url, headers=headers or {}, timeout=timeout, allow_redirects=False)
+        if r.status_code in (301, 302, 303, 307, 308) and r.headers.get("Location"):
+            url = urljoin(url, r.headers["Location"])
+            continue
+        return r
+    raise UnsafeURLError("too many redirects")
 
 
 def slug(t):
@@ -141,7 +210,7 @@ def parse_with_selectors(html_text, cfg):
 def build_feed(cfg):
     fid = cfg["id"]
     url = cfg["url"]
-    r = requests.get(url, headers=UA, timeout=40)
+    r = safe_get(url, headers=UA, timeout=40)
     r.raise_for_status()
 
     if cfg.get("recipe"):

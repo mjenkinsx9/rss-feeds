@@ -26,7 +26,6 @@ import os
 import re
 import sys
 
-import requests
 import yaml
 
 import anthropic
@@ -292,11 +291,21 @@ def main():
                f"A feed with the id `{desired_slug}` already exists in `feeds.yaml`. "
                f"If you want a different page, please pick a different **Feed id (slug)**.")
 
-    # ---- fetch the page ------------------------------------------------------
+    # ---- fetch the page (SSRF-guarded) ---------------------------------------
     try:
-        resp = requests.get(url, headers=UA, timeout=40)
+        generate.assert_public_url(url)
+    except generate.UnsafeURLError as e:
+        finish("reject",
+               f"I can't fetch `{url}`: {e}. Feeds can only be built from public "
+               f"web pages (http/https on a public host). This request was not processed.")
+    try:
+        resp = generate.safe_get(url, headers=UA, timeout=40)
         resp.raise_for_status()
         html = resp.text
+    except generate.UnsafeURLError as e:
+        finish("reject",
+               f"I can't fetch `{url}`: {e}. Feeds can only be built from public "
+               f"web pages. This request was not processed.")
     except Exception as e:
         finish("needs_info",
                f"I couldn't fetch `{url}` (`{e}`). Please double-check the URL is "
@@ -368,14 +377,17 @@ def main():
 
     append_feed(cfg)
 
-    # verify by building the feed once (reuses generate.build_feed; writes docs/<id>.xml)
+    # Verify against the HTML we already fetched (no second network request, so no
+    # DNS-rebinding window). The bot never sets `recipe`, so the selector parser is
+    # exactly what the scheduled build will run.
     item_count, verified = 0, False
     verify_note = ""
     try:
-        item_count = generate.build_feed(cfg)
+        items = generate.parse_with_selectors(html, cfg)
+        item_count = min(len(items), cfg["max_items"]) if cfg.get("max_items") else len(items)
         verified = True
     except Exception as e:
-        verify_note = f"\n\n> ⚠️ Verification build failed: `{e}` — selectors likely need adjusting."
+        verify_note = f"\n\n> ⚠️ Verification parse failed: `{e}` — selectors likely need adjusting."
 
     low = item_count <= 1
     branch = f"feed-request/{feed['id']}-{number}"

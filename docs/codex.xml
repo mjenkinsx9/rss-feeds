@@ -6,7 +6,7 @@
     <atom:link href="https://mjenkinsx9.github.io/rss-feeds/codex.xml" rel="self" type="application/rss+xml"/>
     <description>Unofficial RSS feed of the OpenAI Codex changelog.</description>
     <language>en-us</language>
-    <lastBuildDate>Sun, 14 Jun 2026 05:46:50 +0000</lastBuildDate>
+    <lastBuildDate>Sun, 14 Jun 2026 06:15:33 +0000</lastBuildDate>
     <generator>rss-feeds</generator>
     <item>
       <title>Codex app 26.609</title>
