@@ -71,15 +71,13 @@
   disabled: true
 
 # Added via feed request
-- id: google-ai-machine-learning-blog
-  title: Google Cloud AI & Machine Learning Blog
-  url: https://cloud.google.com/blog/products/ai-machine-learning
-  description: News, updates, and best practices for AI and machine learning solutions
-    on Google Cloud
+- id: google-application-modernization
+  title: Google Cloud Blog - Application Modernization
+  url: https://cloud.google.com/blog/products/application-modernization
+  description: Blog posts about application modernization, DevOps practices, and cloud-native
+    development from Google Cloud.
   item: div.u2M0Kb
   entry_title: h5.Qwf2Db-MnozTc
-  date:
-    selector: p.nRhiJb-cHYyed
   link:
     selector: a.w7DBpd
     attr: href
