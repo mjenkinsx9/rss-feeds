@@ -20,7 +20,7 @@ Feeds are rebuilt every 6 hours and served from GitHub Pages. Browse them all on
 | Source | Feed |
 | --- | --- |
 | [OpenAI Codex Changelog](https://developers.openai.com/codex/changelog) | [codex.xml](https://mjenkinsx9.github.io/rss-feeds/codex.xml) |
-| [Google Cloud AI & Machine Learning Blog](https://cloud.google.com/blog/products/ai-machine-learning) | [google-ai-machine-learning-blog.xml](https://mjenkinsx9.github.io/rss-feeds/google-ai-machine-learning-blog.xml) |
+| [Google Cloud Blog - Application Modernization](https://cloud.google.com/blog/products/application-modernization) | [google-application-modernization.xml](https://mjenkinsx9.github.io/rss-feeds/google-application-modernization.xml) |
 <!-- FEEDS:END -->
 
 ### What is this? <!-- omit in toc -->
