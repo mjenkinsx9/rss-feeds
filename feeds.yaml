@@ -69,3 +69,16 @@
     selector: ".release .date"
     format: '%b %d, %Y'
   disabled: true
+
+# Added via feed request
+- id: google-application-modernization
+  title: Google Cloud Blog - Application Modernization
+  url: https://cloud.google.com/blog/products/application-modernization
+  description: Blog posts about application modernization, DevOps practices, and cloud-native
+    development from Google Cloud.
+  item: div.u2M0Kb
+  entry_title: h5.Qwf2Db-MnozTc
+  link:
+    selector: a.w7DBpd
+    attr: href
+  max_items: 50
