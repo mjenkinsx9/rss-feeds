@@ -82,3 +82,16 @@
     selector: a.w7DBpd
     attr: href
   max_items: 50
+
+# Added via feed request
+- id: google-ai-machine-learning-blog
+  title: Google Cloud AI & Machine Learning Blog
+  url: https://cloud.google.com/blog/products/ai-machine-learning
+  description: News, updates, and best practices for AI and machine learning solutions
+    on Google Cloud.
+  item: div.u2M0Kb
+  entry_title: h5.Qwf2Db-MnozTc
+  link:
+    selector: a.w7DBpd
+    attr: href
+  max_items: 50

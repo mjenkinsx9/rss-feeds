@@ -11,6 +11,9 @@ Always run (structural + duplicate checks):
   - duplicate urls are flagged (warning)
 
 Quality gate (when a base feeds.yaml is passed as argv[1]):
+  - on feed-request branches, existing enabled feeds in the base may not disappear
+    or become disabled (prevents concurrent feed-request PRs from accidentally
+    overwriting each other)
   - for every feed added vs the base, fetch the page and build it once;
     0 items is an error (selectors don't match), 1-2 is a warning.
 
@@ -105,9 +108,18 @@ def main():
         if rec and not os.path.exists(os.path.join("recipes", "%s.py" % rec)):
             errors.append("%s: recipe module recipes/%s.py not found" % (where, rec))
 
-    # quality gate: build feeds added relative to the base
+    # quality gate: protect existing feeds and build feeds added relative to the base
     if base_path and os.path.exists(base_path):
-        base_ids = {c.get("id") for c in load(base_path) if isinstance(c, dict)}
+        base_feeds = load(base_path)
+        base_ids = {c.get("id") for c in base_feeds if isinstance(c, dict)}
+        if os.environ.get("GITHUB_HEAD_REF", "").startswith("feed-request/"):
+            base_enabled_ids = {c.get("id") for c in base_feeds
+                                if isinstance(c, dict) and c.get("id") and not c.get("disabled")}
+            current_enabled_ids = {c.get("id") for c in feeds
+                                   if isinstance(c, dict) and c.get("id") and not c.get("disabled")}
+            for fid in sorted(base_enabled_ids - current_enabled_ids):
+                errors.append("'%s': existing enabled feed was removed or disabled" % fid)
+
         added = [c for c in feeds if isinstance(c, dict) and c.get("id")
                  and c["id"] not in base_ids and not c.get("disabled")]
         if not added:
