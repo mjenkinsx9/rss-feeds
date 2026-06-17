@@ -1,17 +1,56 @@
-# RSS Feeds <!-- omit in toc -->
+# RSS Feeds — Config-Driven RSS Feed Generator <!-- omit in toc -->
 
 [![Build RSS feeds](https://github.com/mjenkinsx9/rss-feeds/actions/workflows/build.yml/badge.svg)](https://github.com/mjenkinsx9/rss-feeds/actions/workflows/build.yml)
 [![Pages](https://img.shields.io/website?url=https%3A%2F%2Fmjenkinsx9.github.io%2Frss-feeds%2F&label=GitHub%20Pages)](https://mjenkinsx9.github.io/rss-feeds/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![RSS 2.0](https://img.shields.io/badge/RSS-2.0-orange.svg)](#available-rss-feeds)
+[![Version](https://img.shields.io/badge/version-rolling%20main-informational.svg)](#versioning--release-model)
 [![Last commit](https://img.shields.io/github/last-commit/mjenkinsx9/rss-feeds)](https://github.com/mjenkinsx9/rss-feeds/commits/main)
 [![Feeds rebuilt every 6h](https://img.shields.io/badge/feeds-rebuilt%20every%206h-success)](https://github.com/mjenkinsx9/rss-feeds/actions/workflows/build.yml)
 
 > [!TIP]
-> A tiny, **config-driven RSS factory**. Describe any web page with CSS selectors in
-> [`feeds.yaml`](./feeds.yaml), and a GitHub Action rebuilds an RSS 2.0 feed for each
-> one every few hours and publishes them to GitHub Pages. No server to run.
+> A tiny, **config-driven RSS feed generator** for changelogs, release notes,
+> blogs, docs updates, and any server-rendered page. Describe the page once with
+> CSS selectors in [`feeds.yaml`](./feeds.yaml); GitHub Actions rebuilds RSS 2.0
+> feeds every few hours and publishes them to GitHub Pages. No server to run.
 
-## tl;dr Available RSS Feeds <!-- omit in toc -->
+**Tags / keywords:** `rss`, `rss-feed`, `rss-generator`, `rss-feed-generator`,
+`feed-generator`, `atom`, `github-pages`, `github-actions`, `python`, `yaml`,
+`beautifulsoup`, `css-selectors`, `web-scraping`, `scraper`, `automation`,
+`no-code`, `changelog`, `release-notes`, `slack-feed`.
+
+## Table of Contents <!-- omit in toc -->
+
+- [At a Glance](#at-a-glance)
+- [Available RSS Feeds](#available-rss-feeds)
+- [What is this?](#what-is-this)
+- [Features](#features)
+- [Quick Start](#quick-start)
+  - [Subscribe to a Feed](#subscribe-to-a-feed)
+  - [Request a Feed (just open an issue)](#request-a-feed-just-open-an-issue)
+- [Add a New Feed](#add-a-new-feed)
+  - [Field reference](#field-reference)
+- [Sites Selectors Can't Handle](#sites-selectors-cant-handle)
+- [Run Locally](#run-locally)
+- [Contributing](#contributing)
+- [How It Works](#how-it-works)
+- [Versioning & Release Model](#versioning--release-model)
+- [Limitations](#limitations)
+- [Disclaimer](#disclaimer)
+
+## At a Glance
+
+| Category | Details |
+| --- | --- |
+| Output | RSS 2.0 XML with an Atom `self` link |
+| Runtime | Python 3.12 with `requests`, BeautifulSoup, PyYAML, and python-dateutil |
+| Hosting | Static files in `docs/`, deployed to GitHub Pages |
+| Update cadence | Every 6 hours, on pushes to `main`, and on manual workflow dispatch |
+| Release model | Rolling deployment from `main`; stable per-feed URLs |
+| Best for | Changelogs, release notes, product blogs, docs/news pages, and public update pages |
+| Consumers | Feedly, Inoreader, NetNewsWire, Thunderbird, Slack `/feed`, and other RSS readers |
+
+## Available RSS Feeds
 
 Feeds are rebuilt every 6 hours and served from GitHub Pages. Browse them all on the
 **[landing page](https://mjenkinsx9.github.io/rss-feeds/)**.
@@ -24,7 +63,7 @@ Feeds are rebuilt every 6 hours and served from GitHub Pages. Browse them all on
 | [Google Cloud AI & Machine Learning Blog](https://cloud.google.com/blog/products/ai-machine-learning) | [google-ai-machine-learning-blog.xml](https://mjenkinsx9.github.io/rss-feeds/google-ai-machine-learning-blog.xml) |
 <!-- FEEDS:END -->
 
-### What is this? <!-- omit in toc -->
+## What is this?
 
 You know that page you like — a changelog, a release notes page, a blog — that
 doesn't have an RSS feed and probably never will?
@@ -36,18 +75,17 @@ Unlike "one script per site" generators, there is a single engine
 no new code — with an escape hatch ([`recipes/`](./recipes)) for pages too quirky
 for plain selectors.
 
-## Table of Contents <!-- omit in toc -->
+## Features
 
-- [Quick Start](#quick-start)
-  - [Subscribe to a Feed](#subscribe-to-a-feed)
-  - [Request a Feed (just open an issue)](#request-a-feed-just-open-an-issue)
-- [Add a New Feed](#add-a-new-feed)
-  - [Field reference](#field-reference)
-- [Sites Selectors Can't Handle](#sites-selectors-cant-handle)
-- [Run Locally](#run-locally)
-- [How It Works](#how-it-works)
-- [Limitations](#limitations)
-- [Disclaimer](#disclaimer)
+- **Config-only feed definitions** — add most feeds by editing YAML and CSS selectors.
+- **Stable public feed URLs** — each enabled feed is published at `/<id>.xml` on GitHub Pages.
+- **RSS-reader friendly output** — RSS 2.0 XML with `lastBuildDate`, stable `guid`s, and an Atom `self` link.
+- **Slack `/feed` compatible** — feeds are served as XML from GitHub Pages for Slack and standard RSS readers.
+- **Automated publishing** — GitHub Actions rebuilds and deploys feeds every 6 hours.
+- **Fail-soft builds** — one broken source logs an error without blocking the other feeds from publishing.
+- **Moderated feed requests** — issue-driven requests are checked against the content policy and opened as human-reviewed PRs.
+- **Escape hatch for complex pages** — custom Python recipes can parse pages selectors cannot express.
+- **Safety guardrails** — untrusted feed URLs are fetched with SSRF protections before publishing.
 
 ## Quick Start
 
@@ -148,10 +186,23 @@ See [`recipes/example_recipe.py`](./recipes/example_recipe.py) for a starting po
 
 ## Run Locally
 
+The GitHub Action runs on Python 3.12. To preview the same generated files locally:
+
 ```bash
-pip install -r requirements.txt
+python -m pip install -r requirements.txt
 python generate.py      # writes docs/<id>.xml and docs/index.html
 ```
+
+## Contributing
+
+Contributions are welcome for feed requests, selector fixes, recipes, docs, and
+workflow improvements.
+
+- Request a feed by opening a [feed request issue](../../issues/new?template=request-feed.yml).
+- Add or fix a feed by editing [`feeds.yaml`](./feeds.yaml), then run `python generate.py`.
+- Add a recipe in [`recipes/`](./recipes) only when CSS selectors are not enough.
+- Do not hand-edit the generated feed table; run
+  [`.github/scripts/update_readme.py`](./.github/scripts/update_readme.py) after changing feeds.
 
 ## How It Works
 
@@ -197,12 +248,23 @@ still publish. Change the cadence via the `cron:` line in
 [`.github/workflows/build.yml`](./.github/workflows/build.yml). If you rename the
 repo, update `SITE_BASE_URL` near the top of `generate.py`.
 
+## Versioning & Release Model
+
+This repository is a hosted feed service rather than a packaged library.
+
+- **Feed URLs are stable and versionless:** subscribe to `https://mjenkinsx9.github.io/rss-feeds/<id>.xml`.
+- **Deployment version:** the latest successful GitHub Pages deployment from `main`.
+- **Feed freshness:** each generated feed includes `lastBuildDate`; items use stable `guid` values.
+- **Engine changes:** track implementation changes through commits, pull requests, and Actions runs.
+- **Future releases:** if the engine is packaged separately, Git tags/releases should use semantic versioning.
+
 ## Limitations
 
 - The Action uses a plain HTTP fetch, so it reads a page's **server-rendered HTML**.
   Pages that build their entire list with client-side JavaScript may return nothing —
   for those, use a service like RSS.app or add a headless-browser (Playwright) step.
 - Built with a single, polite User-Agent; each page is fetched once per run.
+- No database or historical archive is kept; the generated XML files are the persistent output.
 
 ## Disclaimer
 
