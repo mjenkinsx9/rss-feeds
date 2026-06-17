@@ -84,3 +84,19 @@
     selector: a.w7DBpd
     attr: href
   max_items: 50
+
+# Added via feed request
+- id: greptile-blog
+  title: Greptile Blog
+  url: https://www.greptile.com/blog
+  description: Technical blog featuring articles on AI code review, software engineering,
+    and product updates from Greptile.
+  item: a.group.relative.flex.flex-col.md\:flex-row.md\:items-start.gap-1.md\:gap-0.py-5
+  entry_title: h3.text-base.text-primary
+  body: p.text-sm.text-tertiary.truncate.mt-0\.5
+  date:
+    selector: span.font-mono.text-xs.text-tertiary
+  link:
+    selector: a.group.relative.flex.flex-col.md\:flex-row.md\:items-start
+    attr: href
+  max_items: 26
