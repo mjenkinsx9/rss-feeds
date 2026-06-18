@@ -3,6 +3,7 @@
 [![Build RSS feeds](https://github.com/mjenkinsx9/rss-feeds/actions/workflows/build.yml/badge.svg)](https://github.com/mjenkinsx9/rss-feeds/actions/workflows/build.yml)
 [![Pages](https://img.shields.io/website?url=https%3A%2F%2Fmjenkinsx9.github.io%2Frss-feeds%2F&label=GitHub%20Pages)](https://mjenkinsx9.github.io/rss-feeds/)
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 [![RSS 2.0](https://img.shields.io/badge/RSS-2.0-orange.svg)](#available-rss-feeds)
 [![Version](https://img.shields.io/badge/version-rolling%20main-informational.svg)](#versioning--release-model)
 [![Last commit](https://img.shields.io/github/last-commit/mjenkinsx9/rss-feeds)](https://github.com/mjenkinsx9/rss-feeds/commits/main)
@@ -36,6 +37,7 @@
 - [How It Works](#how-it-works)
 - [Versioning & Release Model](#versioning--release-model)
 - [Limitations](#limitations)
+- [License](#license)
 - [Disclaimer](#disclaimer)
 
 ## At a Glance
@@ -265,6 +267,10 @@ This repository is a hosted feed service rather than a packaged library.
   for those, use a service like RSS.app or add a headless-browser (Playwright) step.
 - Built with a single, polite User-Agent; each page is fetched once per run.
 - No database or historical archive is kept; the generated XML files are the persistent output.
+
+## License
+
+This project is licensed under the [MIT License](./LICENSE).
 
 ## Disclaimer
 
